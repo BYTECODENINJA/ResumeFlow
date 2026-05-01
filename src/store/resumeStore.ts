@@ -1,0 +1,157 @@
+import { create } from "zustand";
+import { persist } from "zustand/middleware";
+import { DEFAULT_THEME, type ResumeTheme } from "@/lib/themes";
+
+export interface ContactInfo {
+    phone: string;
+    email: string;
+    website: string;
+    location: string;
+}
+
+export interface Education {
+    id: string;
+    institution: string;
+    degree: string;
+    field: string;
+    startDate: string;
+    endDate: string;
+    description: string;
+}
+
+export interface WorkExperience {
+    id: string;
+    company: string;
+    position: string;
+    startDate: string;
+    endDate: string;
+    description: string;
+    achievements: string[];
+}
+
+export interface Reference {
+    id: string;
+    name: string;
+    relation: string;
+    contact: string;
+}
+
+export interface Language {
+    id: string;
+    name: string;
+    proficiency: string;
+}
+
+export interface CustomSection {
+    id: string;
+    title: string;
+    content: string;
+}
+
+export interface ResumeData {
+    fullName: string;
+    profession: string;
+    contacts: ContactInfo;
+    bio: string;
+    expertise: string[];
+    techStack: string[];
+    education: Education[];
+    workExperience: WorkExperience[];
+    achievements: string[];
+    references: Reference[];
+    languages: Language[];
+    customSections: CustomSection[];
+}
+
+export type ResumeLayout = "modern" | "two-column" | "minimal" | "compact" | "executive";
+
+export interface ResumeState {
+    resume: ResumeData;
+    theme: ResumeTheme;
+    template: string;
+    layout: ResumeLayout;
+    lastSaved: string | null;
+    isDirty: boolean;
+    setField: <K extends keyof ResumeData>(field: K, value: ResumeData[K]) => void;
+    setNestedField: <K extends keyof ResumeData>(field: K, index: number, item: ResumeData[K] extends Array<infer U> ? U : never) => void;
+    addItem: <K extends keyof ResumeData>(field: K, item: ResumeData[K] extends Array<infer U> ? U : never) => void;
+    removeItem: <K extends keyof ResumeData>(field: K, index: number) => void;
+    setTheme: (theme: ResumeTheme) => void;
+    setTemplate: (template: string) => void;
+    setLayout: (layout: ResumeLayout) => void;
+    setLastSaved: (date: string | null) => void;
+    setDirty: (dirty: boolean) => void;
+    reset: () => void;
+    loadResume: (data: ResumeData) => void;
+}
+
+const defaultResume: ResumeData = {
+    fullName: "",
+    profession: "",
+    contacts: {
+        phone: "",
+        email: "",
+        website: "",
+        location: "",
+    },
+    bio: "",
+    expertise: [],
+    techStack: [],
+    education: [],
+    workExperience: [],
+    achievements: [],
+    references: [],
+    languages: [],
+    customSections: [],
+};
+
+export const useResumeStore = create<ResumeState>()(
+    persist(
+        (set) => ({
+            resume: defaultResume,
+            theme: DEFAULT_THEME,
+            template: "modern",
+            layout: "modern" as ResumeLayout,
+            lastSaved: null,
+            isDirty: false,
+            setField: (field, value) =>
+                set((state) => ({
+                    resume: { ...state.resume, [field]: value },
+                    isDirty: true,
+                })),
+            setNestedField: (field, index, item) =>
+                set((state) => {
+                    const arr = [...(state.resume[field] as unknown as Array<typeof item>)];
+                    arr[index] = item;
+                    return { resume: { ...state.resume, [field]: arr }, isDirty: true };
+                }),
+            addItem: (field, item) =>
+                set((state) => {
+                    const arr = [...(state.resume[field] as unknown as Array<typeof item>), item];
+                    return { resume: { ...state.resume, [field]: arr }, isDirty: true };
+                }),
+            removeItem: (field, index) =>
+                set((state) => {
+                    const arr = [...(state.resume[field] as unknown as Array<unknown>)];
+                    arr.splice(index, 1);
+                    return { resume: { ...state.resume, [field]: arr }, isDirty: true };
+                }),
+            setTheme: (theme) => set({ theme }),
+            setTemplate: (template) => set({ template }),
+            setLayout: (layout) => set({ layout }),
+            setLastSaved: (lastSaved) => set({ lastSaved }),
+            setDirty: (isDirty) => set({ isDirty }),
+            reset: () => set({ resume: defaultResume, isDirty: false, lastSaved: null }),
+            loadResume: (data) => set({ resume: data, isDirty: false }),
+        }),
+        {
+            name: "resumeflow-storage",
+            partialize: (state) => ({
+                resume: state.resume,
+                theme: state.theme,
+                template: state.template,
+                layout: state.layout,
+            }),
+        }
+    )
+);
