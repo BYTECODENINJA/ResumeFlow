@@ -24,15 +24,15 @@ function getLuminance(hex: string): number {
     return 0.2126 * r + 0.7152 * g + 0.0722 * b;
 }
 
-export function getContrastColor(backgroundHex: string, accentHex: string): "#000000" | "#ffffff" {
+export function getContrastColor(backgroundHex: string): "#000000" | "#ffffff" {
     const bgLum = getLuminance(backgroundHex);
     const whiteContrast = (1 + 0.05) / (bgLum + 0.05);
     const blackContrast = (bgLum + 0.05) / (0 + 0.05);
     return whiteContrast >= blackContrast ? "#ffffff" : "#000000";
 }
 
-export function computeThemeColors(background: string, accent: string): { text: string; mutedText: string } {
-    const text = getContrastColor(background, accent);
+export function computeThemeColors(background: string): { text: string; mutedText: string } {
+    const text = getContrastColor(background);
     const mutedText = text === "#ffffff" ? "rgba(255,255,255,0.65)" : "rgba(0,0,0,0.6)";
     return { text, mutedText };
 }

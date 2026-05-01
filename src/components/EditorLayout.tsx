@@ -37,7 +37,6 @@ export function EditorLayout() {
     const template = useResumeStore((s) => s.template);
     const layout = useResumeStore((s) => s.layout);
     const loadResume = useResumeStore((s) => s.loadResume);
-    const setTheme = useResumeStore((s) => s.setTheme);
     const setTemplate = useResumeStore((s) => s.setTemplate);
     const setLayout = useResumeStore((s) => s.setLayout);
     const setLastSaved = useResumeStore((s) => s.setLastSaved);
@@ -88,10 +87,6 @@ export function EditorLayout() {
     const handleLoad = useCallback(
         (session: SavedSession) => {
             loadResume(session.data);
-            const th = useResumeStore.getState().theme;
-            if (session.themeId && session.themeId !== th.id) {
-                const allThemes = JSON.parse(localStorage.getItem("resumeflow-storage") || "{}");
-            }
             if (session.template) setTemplate(session.template);
             if (session.layout) setLayout(session.layout as ReturnType<typeof useResumeStore.getState>["layout"]);
             setLoadDialogOpen(false);

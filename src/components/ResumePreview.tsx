@@ -7,7 +7,7 @@ export const ResumePreview = memo(function ResumePreview() {
     const resume = useResumeStore((s) => s.resume);
     const theme = useResumeStore((s) => s.theme);
     const layout = useResumeStore((s) => s.layout);
-    const { text, mutedText } = computeThemeColors(theme.background, theme.accent);
+    const { text, mutedText } = computeThemeColors(theme.background);
 
     const hasContent =
         resume.fullName ||

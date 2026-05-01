@@ -37,7 +37,7 @@ function ThemeSwatch({
     isActive: boolean;
     onClick: () => void;
 }) {
-    const { text } = useMemo(() => computeThemeColors(theme.background, theme.accent), [theme]);
+    const { text } = useMemo(() => computeThemeColors(theme.background), [theme]);
 
     return (
         <button

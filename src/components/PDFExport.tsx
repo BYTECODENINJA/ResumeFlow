@@ -1,10 +1,9 @@
-import { useRef, useState, useCallback } from "react";
+import { useState, useCallback } from "react";
 import html2canvas from "html2canvas";
 import jsPDF from "jspdf";
 import { Download, Loader2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useResumeStore } from "@/store/resumeStore";
-import { computeThemeColors } from "@/lib/themes";
 
 export function PDFExportButton() {
     const [isExporting, setIsExporting] = useState(false);
