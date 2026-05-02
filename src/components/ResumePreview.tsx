@@ -160,7 +160,7 @@ function ExpertiseBadges({
 }) {
     if (expertise.length === 0) return null;
     return (
-        <div className={`flex flex-wrap gap-2 ${centered ? "justify-center" : ""}`}>
+        <div className={`flex flex-wrap gap-2 w-full ${centered ? "justify-center" : ""}`}>
             {expertise.map((skill, i) => (
                 <span
                     key={i}
@@ -190,7 +190,7 @@ function TechStackBadges({
 }) {
     if (techStack.length === 0) return null;
     return (
-        <div className={`flex flex-wrap gap-2 ${centered ? "justify-center" : ""}`}>
+        <div className={`flex flex-wrap gap-2 w-full ${centered ? "justify-center" : ""}`}>
             {techStack.map((tech, i) => (
                 <span
                     key={i}

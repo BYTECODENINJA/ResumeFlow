@@ -98,3 +98,26 @@ export async function suggestSkills(jobTitle: string, existingSkills: string[]):
     });
     return result.split(",").map((s) => s.trim()).filter(Boolean);
 }
+
+export async function suggestEducationHighlights(input: {
+    degree?: string;
+    field?: string;
+    institution?: string;
+}): Promise<string> {
+    const degree = input.degree?.trim() || "a degree";
+    const field = input.field?.trim();
+    const institution = input.institution?.trim();
+
+    const prompt = `Write 2-4 concise resume-ready bullet points about the education entry below. Include honors, coursework, projects, leadership, or GPA placeholders ONLY if unknown. Return ONLY bullet points, one per line, starting with "• ".
+
+Degree: ${degree}
+Field: ${field || "(not provided)"}
+Institution: ${institution || "(not provided)"}`;
+
+    return generateWithKimi({
+        systemPrompt: RESUME_SYSTEM_PROMPT,
+        userPrompt: prompt,
+        temperature: 0.7,
+        maxTokens: 220,
+    });
+}

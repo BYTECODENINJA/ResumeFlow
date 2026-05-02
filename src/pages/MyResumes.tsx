@@ -1,10 +1,11 @@
 import { useCallback, useEffect, useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
-import { ArrowLeft, FileText, Loader2, Pencil, Plus, Trash2 } from "lucide-react";
+import { ArrowLeft, Eye, FileText, Loader2, Pencil, Plus, Trash2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useAuth } from "@/contexts/AuthContext";
 import { deleteResume, getUserResumes, type SavedResume } from "@/lib/supabase";
 import { toast } from "sonner";
+import { ReportBugDialogButton } from "@/components/ReportBugDialog";
 
 export default function MyResumes() {
     const { user, signOut } = useAuth();
@@ -61,10 +62,11 @@ export default function MyResumes() {
                         <Button variant="ghost" size="sm" className="text-white/70 hidden sm:inline-flex" onClick={() => signOut()}>
                             Sign out
                         </Button>
+                        <ReportBugDialogButton className="hidden sm:inline-flex" />
                         <Button
                             size="sm"
                             className="bg-neon-green text-black hover:bg-neon-green/90 font-semibold gap-1"
-                            onClick={() => navigate("/builder")}
+                            onClick={() => navigate("/builder?new=1")}
                         >
                             <Plus className="w-4 h-4" />
                             <span className="hidden sm:inline">New resume</span>
@@ -106,6 +108,15 @@ export default function MyResumes() {
                                     </p>
                                 </div>
                                 <div className="flex items-center gap-2 shrink-0">
+                                    <Button
+                                        variant="outline"
+                                        size="sm"
+                                        className="border-white/15 text-white/80 hover:bg-white/5 gap-1 h-8 text-xs"
+                                        onClick={() => navigate(`/builder?resumeId=${r.id}&view=1`)}
+                                    >
+                                        <Eye className="w-3.5 h-3.5" />
+                                        View
+                                    </Button>
                                     <Button
                                         size="sm"
                                         className="bg-neon-green text-black hover:bg-neon-green/90 gap-1 h-8 text-xs"

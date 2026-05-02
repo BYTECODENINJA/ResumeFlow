@@ -5,13 +5,15 @@ import { Download, Loader2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useResumeStore } from "@/store/resumeStore";
 import { ExportPaywallDialog } from "@/components/ExportPaywallDialog";
-import { isExportUnlocked } from "@/lib/payment";
+import { isExportUnlocked, isFreeExportEmail } from "@/lib/payment";
+import { useAuth } from "@/contexts/AuthContext";
 
 export function PDFExportButton({ disabled = false }: { disabled?: boolean }) {
     const [isExporting, setIsExporting] = useState(false);
     const [paywallOpen, setPaywallOpen] = useState(false);
     const resume = useResumeStore((s) => s.resume);
     const theme = useResumeStore((s) => s.theme);
+    const { user } = useAuth();
 
     const doExport = useCallback(async () => {
         const previewEl = document.getElementById("resume-preview-canvas");
@@ -44,7 +46,7 @@ export function PDFExportButton({ disabled = false }: { disabled?: boolean }) {
 
     const handleClick = () => {
         if (disabled) return;
-        if (isExportUnlocked()) {
+        if (isFreeExportEmail(user?.email) || isExportUnlocked()) {
             void doExport();
             return;
         }

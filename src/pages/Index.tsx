@@ -3,6 +3,7 @@ import { ArrowRight, Sparkles, Zap, Palette, Download, Shield, Globe } from "luc
 import { Button } from "@/components/ui/button";
 import { useResumeStore } from "@/store/resumeStore";
 import { useEffect, useState } from "react";
+import { ReportBugDialogButton } from "@/components/ReportBugDialog";
 
 export default function Index() {
     const navigate = useNavigate();
@@ -47,6 +48,7 @@ export default function Index() {
                         >
                             My Resumes
                         </Button>
+                        <ReportBugDialogButton className="hidden sm:inline-flex" />
                         <Button
                             onClick={goToAuthenticatedBuilder}
                             className="bg-neon-green text-black hover:bg-neon-green/90 font-semibold gap-2"

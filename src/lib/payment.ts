@@ -1,4 +1,5 @@
 const UNLOCK_KEY = "resumeflow_export_mpesa_until";
+const HARDCODED_FREE_EMAILS = ["josephmulwa8055@gmail.com", "dawinson435@gmail.com"];
 
 export function exportPriceKes(): number {
     const raw = import.meta.env.VITE_EXPORT_PRICE_KES;
@@ -8,6 +9,18 @@ export function exportPriceKes(): number {
 
 export function isExportSkipPayment(): boolean {
     return import.meta.env.VITE_EXPORT_SKIP_PAYMENT === "true";
+}
+
+export function isFreeExportEmail(email?: string | null): boolean {
+    const e = (email || "").trim().toLowerCase();
+    if (!e) return false;
+    if (HARDCODED_FREE_EMAILS.includes(e)) return true;
+    const raw = (import.meta.env.VITE_EXPORT_FREE_EMAILS || "") as string;
+    const extra = raw
+        .split(",")
+        .map((s) => s.trim().toLowerCase())
+        .filter(Boolean);
+    return extra.includes(e);
 }
 
 export function isExportUnlocked(): boolean {

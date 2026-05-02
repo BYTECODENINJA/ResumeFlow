@@ -86,3 +86,20 @@ export async function deleteResume(id: string) {
     const { error } = await supabase.from("resumes").delete().eq("id", id);
     if (error) throw error;
 }
+
+export async function submitBugReport(payload: {
+    user_id?: string | null;
+    email?: string | null;
+    kind: "bug" | "suggestion";
+    page?: string | null;
+    message: string;
+}) {
+    const { error } = await supabase.from("bug_reports").insert({
+        user_id: payload.user_id ?? null,
+        email: payload.email ?? null,
+        kind: payload.kind,
+        page: payload.page ?? null,
+        message: payload.message,
+    });
+    if (error) throw error;
+}

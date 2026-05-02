@@ -4,6 +4,7 @@ import { Link } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { EditorLayout } from "@/components/EditorLayout";
 import { SESSION_DEMO_FLAG, useResumeStore } from "@/store/resumeStore";
+import { ReportBugDialogButton } from "@/components/ReportBugDialog";
 
 export interface BuilderPageProps {
     /** Public try-out: no autosave, Save/Load, PDF export, or cloud writes. */
@@ -54,6 +55,7 @@ export default function Builder({ isDemo = false }: BuilderPageProps) {
                 </div>
                 <div className="flex items-center gap-2 shrink-0">
                     {!isDemo && <span className="text-xs text-white/40 hidden md:inline whitespace-nowrap">AI-Powered Resume Builder</span>}
+                    <ReportBugDialogButton className="hidden sm:inline-flex" />
                     {isDemo ? (
                         <Button
                             asChild

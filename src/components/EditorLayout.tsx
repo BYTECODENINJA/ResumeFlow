@@ -31,6 +31,8 @@ export function EditorLayout({ isDemo = false }: { isDemo?: boolean }) {
     const navigate = useNavigate();
     const [searchParams, setSearchParams] = useSearchParams();
     const resumeId = searchParams.get("resumeId");
+    const viewOnly = searchParams.get("view") === "1";
+    const isNew = searchParams.get("new") === "1";
     const loadedRemoteRef = useRef<string | null>(null);
     const { user, loading: authLoading } = useAuth();
 
@@ -47,6 +49,7 @@ export function EditorLayout({ isDemo = false }: { isDemo?: boolean }) {
     const template = useResumeStore((s) => s.template);
     const layout = useResumeStore((s) => s.layout);
     const loadResume = useResumeStore((s) => s.loadResume);
+    const reset = useResumeStore((s) => s.reset);
     const setTheme = useResumeStore((s) => s.setTheme);
     const setTemplate = useResumeStore((s) => s.setTemplate);
     const setLayout = useResumeStore((s) => s.setLayout);
@@ -56,11 +59,29 @@ export function EditorLayout({ isDemo = false }: { isDemo?: boolean }) {
     useAutoSave(1500, { enabled: !isDemo });
 
     useEffect(() => {
+        if (!isNew) return;
+        // Open a blank resume when user clicks "New resume".
+        reset();
+        loadedRemoteRef.current = null;
+        setSearchParams(
+            (prev) => {
+                const next = new URLSearchParams(prev);
+                next.delete("new");
+                next.delete("resumeId");
+                next.delete("view");
+                return next;
+            },
+            { replace: true }
+        );
+    }, [isNew, reset, setSearchParams]);
+
+    useEffect(() => {
         if (!resumeId) loadedRemoteRef.current = null;
     }, [resumeId]);
 
     useEffect(() => {
         if (isDemo) return;
+        if (viewOnly && !resumeId) return;
         if (authLoading) return;
         if (resumeId && !user) {
             toast.info("Sign in to load this resume from the cloud");
@@ -109,7 +130,7 @@ export function EditorLayout({ isDemo = false }: { isDemo?: boolean }) {
         return () => {
             cancelled = true;
         };
-    }, [isDemo, resumeId, user, authLoading, loadResume, navigate, setLayout, setSearchParams, setTheme, setTemplate]);
+    }, [isDemo, viewOnly, resumeId, user, authLoading, loadResume, navigate, setLayout, setSearchParams, setTheme, setTemplate]);
 
     useEffect(() => {
         const check = () => setIsMobile(window.innerWidth < 1024);
@@ -283,7 +304,7 @@ export function EditorLayout({ isDemo = false }: { isDemo?: boolean }) {
         </Dialog>
     );
 
-    const saveLoadToolbar = !isDemo ? (
+    const saveLoadToolbar = !isDemo && !viewOnly ? (
         <>
             {SaveButton}
             {LoadDialog}
@@ -294,7 +315,10 @@ export function EditorLayout({ isDemo = false }: { isDemo?: boolean }) {
         return (
             <div className="h-[calc(100vh-64px)] flex flex-col bg-black">
                 <div className="flex items-center justify-between px-4 py-2 border-b border-white/10 bg-black/50 backdrop-blur-sm">
-                    <Tabs value={activeTab} onValueChange={(v) => setActiveTab(v as "edit" | "preview")}>
+                    <Tabs
+                        value={viewOnly ? "preview" : activeTab}
+                        onValueChange={(v) => setActiveTab(v as "edit" | "preview")}
+                    >
                         <TabsList className="bg-white/5 border border-white/10">
                             <TabsTrigger value="edit" className="gap-1.5 data-[state=active]:bg-neon-green data-[state=active]:text-black">
                                 <PanelLeft className="w-3.5 h-3.5" />
@@ -312,7 +336,7 @@ export function EditorLayout({ isDemo = false }: { isDemo?: boolean }) {
                     </div>
                 </div>
                 <div className="flex-1 overflow-hidden">
-                    {activeTab === "edit" ? (
+                    {activeTab === "edit" && !viewOnly ? (
                         <div className="h-full bg-black">
                             <ResumeForm />
                         </div>
@@ -331,6 +355,7 @@ export function EditorLayout({ isDemo = false }: { isDemo?: boolean }) {
     return (
         <div className="h-[calc(100vh-64px)] flex bg-black">
             {/* Left Panel - Editor */}
+            {!viewOnly && (
             <div className="w-[45%] min-w-[380px] max-w-[520px] flex flex-col border-r border-white/10 bg-black">
                 <div className="flex items-center justify-between px-4 py-2.5 border-b border-white/10 bg-black/50 backdrop-blur-sm">
                     <div className="flex items-center gap-2 text-xs text-white/50">
@@ -354,13 +379,14 @@ export function EditorLayout({ isDemo = false }: { isDemo?: boolean }) {
                     <ResumeForm />
                 </div>
             </div>
+            )}
 
             {/* Right Panel - Preview */}
             <div className="flex-1 flex flex-col bg-[#0a0a0a]">
                 <div className="flex items-center justify-between px-4 py-2.5 border-b border-white/10 bg-black/50 backdrop-blur-sm">
                     <div className="flex items-center gap-2 text-xs text-white/50">
                         <Smartphone className="w-3.5 h-3.5" />
-                        <span>Live Preview</span>
+                        <span>{viewOnly ? "Resume Preview" : "Live Preview"}</span>
                     </div>
                     <div className="flex items-center gap-2">
                         <LayoutSelector />
@@ -368,7 +394,7 @@ export function EditorLayout({ isDemo = false }: { isDemo?: boolean }) {
                     </div>
                 </div>
                 <div className="flex-1 overflow-auto p-6">
-                    <div className="max-w-[700px] mx-auto">
+                    <div className={`mx-auto ${viewOnly ? "max-w-[900px]" : "max-w-[700px]"}`}>
                         <ResumePreview />
                     </div>
                 </div>

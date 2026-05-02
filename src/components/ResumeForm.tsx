@@ -34,7 +34,7 @@ import {
 } from "@/components/ui/accordion";
 import { fileToCompressedJpegDataUrl } from "@/lib/imageUpload";
 import { useResumeStore, type Education, type WorkExperience, type Reference, type Language, type CustomSection } from "@/store/resumeStore";
-import { generateProfessionalSummary, rewriteBulletPoints, suggestSkills } from "@/lib/ai";
+import { generateProfessionalSummary, rewriteBulletPoints, suggestEducationHighlights, suggestSkills } from "@/lib/ai";
 import { toast } from "sonner";
 
 export function ResumeForm() {
@@ -561,6 +561,7 @@ function EducationSection() {
     const addItem = useResumeStore((s) => s.addItem);
     const removeItem = useResumeStore((s) => s.removeItem);
     const setNestedField = useResumeStore((s) => s.setNestedField);
+    const [aiEduLoadingId, setAiEduLoadingId] = useState<string | null>(null);
 
     const addEducation = () => {
         const newEdu: Education = {
@@ -578,6 +579,26 @@ function EducationSection() {
     const updateEducation = (index: number, field: keyof Education, value: string) => {
         const item = { ...education[index], [field]: value };
         setNestedField("education", index, item);
+    };
+
+    const handleEduAISuggest = async (index: number) => {
+        const edu = education[index];
+        if (!edu) return;
+        setAiEduLoadingId(edu.id);
+        try {
+            const bullets = await suggestEducationHighlights({
+                degree: edu.degree,
+                field: edu.field,
+                institution: edu.institution,
+            });
+            updateEducation(index, "description", bullets);
+            toast.success("Education highlights added");
+        } catch (e) {
+            console.error(e);
+            toast.error(e instanceof Error ? e.message : "AI request failed");
+        } finally {
+            setAiEduLoadingId(null);
+        }
     };
 
     return (
@@ -634,15 +655,27 @@ function EducationSection() {
                                 rows={2}
                                 className="bg-white/5 border-white/10 text-white placeholder:text-white/30 text-xs resize-none"
                             />
-                            <Button
-                                variant="ghost"
-                                size="sm"
-                                onClick={() => removeItem("education", index)}
-                                className="text-red-400 hover:text-red-400 hover:bg-red-400/10 gap-1.5 h-7 text-xs"
-                            >
-                                <Trash2 className="w-3 h-3" />
-                                Remove
-                            </Button>
+                            <div className="flex gap-2">
+                                <Button
+                                    variant="ghost"
+                                    size="sm"
+                                    onClick={() => void handleEduAISuggest(index)}
+                                    disabled={aiEduLoadingId === edu.id}
+                                    className="text-neon-green hover:text-neon-green hover:bg-neon-green/10 gap-1.5 h-7 text-xs"
+                                >
+                                    {aiEduLoadingId === edu.id ? <Loader2 className="w-3 h-3 animate-spin" /> : <Wand2 className="w-3 h-3" />}
+                                    AI Suggest
+                                </Button>
+                                <Button
+                                    variant="ghost"
+                                    size="sm"
+                                    onClick={() => removeItem("education", index)}
+                                    className="text-red-400 hover:text-red-400 hover:bg-red-400/10 gap-1.5 h-7 text-xs ml-auto"
+                                >
+                                    <Trash2 className="w-3 h-3" />
+                                    Remove
+                                </Button>
+                            </div>
                         </AccordionContent>
                     </AccordionItem>
                 ))}
