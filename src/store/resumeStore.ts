@@ -1,6 +1,30 @@
 import { create } from "zustand";
-import { persist } from "zustand/middleware";
+import { createJSONStorage, persist } from "zustand/middleware";
 import { DEFAULT_THEME, type ResumeTheme } from "@/lib/themes";
+
+/** Set synchronously before the app boots on `/demo` (see index.html) and while the demo UI is mounted. */
+export const SESSION_DEMO_FLAG = "resumeflow-demo-flag";
+
+export function isDemoPersistSuspended(): boolean {
+    if (typeof window === "undefined") return false;
+    try {
+        return sessionStorage.getItem(SESSION_DEMO_FLAG) === "1";
+    } catch {
+        return false;
+    }
+}
+
+const resumePersistStorage = createJSONStorage(() => ({
+    getItem: (name) => {
+        if (isDemoPersistSuspended()) return null;
+        return localStorage.getItem(name);
+    },
+    setItem: (name, value) => {
+        if (isDemoPersistSuspended()) return;
+        localStorage.setItem(name, value);
+    },
+    removeItem: (name) => localStorage.removeItem(name),
+}));
 
 export interface ContactInfo {
     phone: string;
@@ -51,6 +75,8 @@ export interface CustomSection {
 export interface ResumeData {
     fullName: string;
     profession: string;
+    /** Data URL or https URL for profile / headshot */
+    photoUrl: string;
     contacts: ContactInfo;
     bio: string;
     expertise: string[];
@@ -85,9 +111,10 @@ export interface ResumeState {
     loadResume: (data: ResumeData) => void;
 }
 
-const defaultResume: ResumeData = {
+export const DEFAULT_RESUME_DATA: ResumeData = {
     fullName: "",
     profession: "",
+    photoUrl: "",
     contacts: {
         phone: "",
         email: "",
@@ -105,10 +132,32 @@ const defaultResume: ResumeData = {
     customSections: [],
 };
 
+/** Merge persisted JSON / Supabase rows into a full ResumeData shape */
+export function mergeResumePayload(raw: Record<string, unknown>): ResumeData {
+    const p = raw as Partial<ResumeData>;
+    return {
+        ...DEFAULT_RESUME_DATA,
+        ...p,
+        fullName: p.fullName ?? "",
+        profession: p.profession ?? "",
+        photoUrl: typeof p.photoUrl === "string" ? p.photoUrl : "",
+        contacts: { ...DEFAULT_RESUME_DATA.contacts, ...(p.contacts ?? {}) },
+        bio: p.bio ?? "",
+        expertise: Array.isArray(p.expertise) ? p.expertise : [],
+        techStack: Array.isArray(p.techStack) ? p.techStack : [],
+        education: Array.isArray(p.education) ? p.education : [],
+        workExperience: Array.isArray(p.workExperience) ? p.workExperience : [],
+        achievements: Array.isArray(p.achievements) ? p.achievements : [],
+        references: Array.isArray(p.references) ? p.references : [],
+        languages: Array.isArray(p.languages) ? p.languages : [],
+        customSections: Array.isArray(p.customSections) ? p.customSections : [],
+    };
+}
+
 export const useResumeStore = create<ResumeState>()(
     persist(
         (set) => ({
-            resume: defaultResume,
+            resume: DEFAULT_RESUME_DATA,
             theme: DEFAULT_THEME,
             template: "modern",
             layout: "modern" as ResumeLayout,
@@ -141,11 +190,12 @@ export const useResumeStore = create<ResumeState>()(
             setLayout: (layout) => set({ layout }),
             setLastSaved: (lastSaved) => set({ lastSaved }),
             setDirty: (isDirty) => set({ isDirty }),
-            reset: () => set({ resume: defaultResume, isDirty: false, lastSaved: null }),
+            reset: () => set({ resume: DEFAULT_RESUME_DATA, isDirty: false, lastSaved: null }),
             loadResume: (data) => set({ resume: data, isDirty: false }),
         }),
         {
             name: "resumeflow-storage",
+            storage: resumePersistStorage,
             partialize: (state) => ({
                 resume: state.resume,
                 theme: state.theme,

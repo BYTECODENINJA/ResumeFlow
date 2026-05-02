@@ -1,5 +1,7 @@
-const TOOLKIT_URL = import.meta.env.EXPO_PUBLIC_TOOLKIT_URL || "";
-const SECRET_KEY = import.meta.env.EXPO_PUBLIC_RORK_TOOLKIT_SECRET_KEY || "";
+const TOOLKIT_URL =
+    import.meta.env.VITE_AI_TOOLKIT_URL || import.meta.env.EXPO_PUBLIC_TOOLKIT_URL || "";
+const SECRET_KEY =
+    import.meta.env.VITE_AI_TOOLKIT_SECRET_KEY || import.meta.env.EXPO_PUBLIC_RORK_TOOLKIT_SECRET_KEY || "";
 
 const MODEL_ID = "moonshotai/kimi-k2.6";
 

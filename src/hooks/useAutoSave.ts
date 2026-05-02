@@ -1,7 +1,8 @@
 import { useEffect, useRef, useCallback } from "react";
 import { useResumeStore } from "@/store/resumeStore";
 
-export function useAutoSave(delay = 2000) {
+export function useAutoSave(delay = 2000, options?: { enabled?: boolean }) {
+    const enabled = options?.enabled !== false;
     const resume = useResumeStore((s) => s.resume);
     const theme = useResumeStore((s) => s.theme);
     const template = useResumeStore((s) => s.template);
@@ -30,6 +31,7 @@ export function useAutoSave(delay = 2000) {
     }, [resume, theme, template, layout, setLastSaved, setDirty]);
 
     useEffect(() => {
+        if (!enabled) return;
         if (!isDirty) return;
         if (timeoutRef.current) clearTimeout(timeoutRef.current);
         timeoutRef.current = setTimeout(() => {
@@ -38,7 +40,7 @@ export function useAutoSave(delay = 2000) {
         return () => {
             if (timeoutRef.current) clearTimeout(timeoutRef.current);
         };
-    }, [isDirty, save, delay]);
+    }, [enabled, isDirty, save, delay]);
 
     return { save };
 }

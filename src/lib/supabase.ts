@@ -17,22 +17,63 @@ export interface SavedResume {
     data: Record<string, unknown>;
     theme_id: string;
     template: string;
+    layout: string;
     created_at: string;
     updated_at: string;
 }
 
-export async function saveResume(userId: string, title: string, data: Record<string, unknown>, themeId: string, template: string) {
-    const { data: result, error } = await supabase
+export async function getResumeById(id: string) {
+    const { data, error } = await supabase.from("resumes").select("*").eq("id", id).maybeSingle();
+    if (error) throw error;
+    return data as SavedResume | null;
+}
+
+export async function createCloudResume(
+    userId: string,
+    title: string,
+    data: Record<string, unknown>,
+    themeId: string,
+    template: string,
+    layout: string
+) {
+    const now = new Date().toISOString();
+    const { data: row, error } = await supabase
         .from("resumes")
-        .upsert(
-            { user_id: userId, title, data, theme_id: themeId, template, updated_at: new Date().toISOString() },
-            { onConflict: "user_id,title" }
-        )
+        .insert({
+            user_id: userId,
+            title,
+            data,
+            theme_id: themeId,
+            template,
+            layout,
+            updated_at: now,
+        })
         .select()
         .single();
 
     if (error) throw error;
-    return result;
+    return row as SavedResume;
+}
+
+export async function updateCloudResume(
+    id: string,
+    payload: {
+        title?: string;
+        data?: Record<string, unknown>;
+        theme_id?: string;
+        template?: string;
+        layout?: string;
+    }
+) {
+    const { error } = await supabase
+        .from("resumes")
+        .update({
+            ...payload,
+            updated_at: new Date().toISOString(),
+        })
+        .eq("id", id);
+
+    if (error) throw error;
 }
 
 export async function getUserResumes(userId: string) {

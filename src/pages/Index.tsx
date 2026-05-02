@@ -15,9 +15,13 @@ export default function Index() {
         return () => window.removeEventListener("scroll", onScroll);
     }, []);
 
-    const startBuilding = () => {
+    const goToAuthenticatedBuilder = () => {
         reset();
-        navigate("/builder");
+        navigate("/auth", { state: { from: "/builder" } });
+    };
+
+    const openDemoBuilder = () => {
+        navigate("/demo");
     };
 
     return (
@@ -39,12 +43,12 @@ export default function Index() {
                         <Button
                             variant="ghost"
                             className="text-white/70 hover:text-white hover:bg-white/10 hidden sm:inline-flex"
-                            onClick={() => navigate("/builder")}
+                            onClick={() => navigate("/resumes")}
                         >
                             My Resumes
                         </Button>
                         <Button
-                            onClick={startBuilding}
+                            onClick={goToAuthenticatedBuilder}
                             className="bg-neon-green text-black hover:bg-neon-green/90 font-semibold gap-2"
                         >
                             Start Building
@@ -77,7 +81,7 @@ export default function Index() {
                     </p>
                     <div className="flex flex-col sm:flex-row items-center justify-center gap-4">
                         <Button
-                            onClick={startBuilding}
+                            onClick={goToAuthenticatedBuilder}
                             size="lg"
                             className="bg-neon-green text-black hover:bg-neon-green/90 font-bold text-base px-8 py-6 gap-2 w-full sm:w-auto"
                         >
@@ -87,7 +91,7 @@ export default function Index() {
                         <Button
                             variant="outline"
                             size="lg"
-                            onClick={() => navigate("/builder")}
+                            onClick={openDemoBuilder}
                             className="border-white/20 text-white hover:bg-white/5 hover:text-white font-semibold text-base px-8 py-6 w-full sm:w-auto"
                         >
                             View Demo
@@ -161,7 +165,7 @@ export default function Index() {
                                 key={theme.name}
                                 className="rounded-xl p-4 border border-white/10 transition-transform hover:scale-[1.02] cursor-pointer"
                                 style={{ backgroundColor: theme.bg }}
-                                onClick={startBuilding}
+                                onClick={openDemoBuilder}
                             >
                                 <div className="flex items-center gap-2 mb-3">
                                     <div className="w-3 h-3 rounded-full" style={{ backgroundColor: theme.accent }} />
@@ -186,7 +190,7 @@ export default function Index() {
                         Join thousands of professionals who landed their dream jobs with ResumeFlow.
                     </p>
                     <Button
-                        onClick={startBuilding}
+                        onClick={goToAuthenticatedBuilder}
                         size="lg"
                         className="bg-neon-green text-black hover:bg-neon-green/90 font-bold text-base px-8 py-6 gap-2"
                     >

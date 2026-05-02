@@ -1,4 +1,4 @@
-import { useState, useCallback } from "react";
+import { useState, useCallback, useRef } from "react";
 import {
     User,
     Mail,
@@ -19,6 +19,7 @@ import {
     Loader2,
     Layers,
     Cpu,
+    ImagePlus,
 } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
@@ -31,6 +32,7 @@ import {
     AccordionItem,
     AccordionTrigger,
 } from "@/components/ui/accordion";
+import { fileToCompressedJpegDataUrl } from "@/lib/imageUpload";
 import { useResumeStore, type Education, type WorkExperience, type Reference, type Language, type CustomSection } from "@/store/resumeStore";
 import { generateProfessionalSummary, rewriteBulletPoints, suggestSkills } from "@/lib/ai";
 import { toast } from "sonner";
@@ -57,6 +59,8 @@ export function ResumeForm() {
 function PersonalInfoSection() {
     const resume = useResumeStore((s) => s.resume);
     const setField = useResumeStore((s) => s.setField);
+    const photoFileRef = useRef<HTMLInputElement>(null);
+    const [photoBusy, setPhotoBusy] = useState(false);
 
     const updateContact = useCallback(
         (key: keyof typeof resume.contacts, value: string) => {
@@ -89,6 +93,70 @@ function PersonalInfoSection() {
                         placeholder="e.g. Senior Product Designer"
                         className="bg-white/5 border-white/10 text-white placeholder:text-white/30 focus:border-neon-green/50"
                     />
+                </div>
+                <div>
+                    <Label className="text-xs text-white/60 mb-1.5 block flex items-center gap-1">
+                        <ImagePlus className="w-3 h-3" /> Profile photo
+                    </Label>
+                    <Input
+                        value={resume.photoUrl}
+                        onChange={(e) => setField("photoUrl", e.target.value)}
+                        placeholder="Paste image URL, or upload a file below"
+                        className="bg-white/5 border-white/10 text-white placeholder:text-white/30 focus:border-neon-green/50 mb-2"
+                    />
+                    <div className="flex flex-wrap items-center gap-2">
+                        <input
+                            ref={photoFileRef}
+                            type="file"
+                            accept="image/*"
+                            className="hidden"
+                            onChange={(e) => {
+                                const file = e.target.files?.[0];
+                                e.target.value = "";
+                                if (!file) return;
+
+                                void (async () => {
+                                    setPhotoBusy(true);
+                                    try {
+                                        if (file.size > 12 * 1024 * 1024) {
+                                            toast.error("Use an image under 12 MB.");
+                                            return;
+                                        }
+                                        const dataUrl = await fileToCompressedJpegDataUrl(file, 420, 0.88);
+                                        setField("photoUrl", dataUrl);
+                                        toast.success("Photo added");
+                                    } catch (err) {
+                                        console.error(err);
+                                        toast.error(err instanceof Error ? err.message : "Could not load that image.");
+                                    } finally {
+                                        setPhotoBusy(false);
+                                    }
+                                })();
+                            }}
+                        />
+                        <Button
+                            type="button"
+                            variant="secondary"
+                            size="sm"
+                            disabled={photoBusy}
+                            className="h-8 px-3 text-xs bg-white/10 text-white hover:bg-white/15 border border-white/10 shadow-none gap-2"
+                            onClick={() => photoFileRef.current?.click()}
+                        >
+                            {photoBusy ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <ImagePlus className="w-3.5 h-3.5" />}
+                            {photoBusy ? "Processing…" : "Upload"}
+                        </Button>
+                        {resume.photoUrl && (
+                            <Button
+                                type="button"
+                                variant="ghost"
+                                size="sm"
+                                className="h-7 text-[11px] text-white/55 hover:text-white"
+                                onClick={() => setField("photoUrl", "")}
+                            >
+                                Clear photo
+                            </Button>
+                        )}
+                    </div>
                 </div>
                 <div className="grid grid-cols-2 gap-3">
                     <div>

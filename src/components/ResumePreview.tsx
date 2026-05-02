@@ -12,6 +12,7 @@ export const ResumePreview = memo(function ResumePreview() {
     const hasContent =
         resume.fullName ||
         resume.profession ||
+        resume.photoUrl ||
         resume.bio ||
         resume.education.length > 0 ||
         resume.workExperience.length > 0;
@@ -110,6 +111,43 @@ function ContactItems({
     );
 }
 
+function ProfileHeadshot({
+    photoUrl,
+    theme,
+    mutedText,
+    dimensionClass,
+}: {
+    photoUrl: string;
+    theme: ReturnType<typeof useResumeStore.getState>["theme"];
+    mutedText: string;
+    dimensionClass: string;
+}) {
+    const border = `2px solid ${theme.accent}50`;
+    if (photoUrl) {
+        return (
+            <img
+                src={photoUrl}
+                alt=""
+                crossOrigin="anonymous"
+                referrerPolicy="no-referrer"
+                className={`rounded-full object-cover shrink-0 bg-white/5 ${dimensionClass}`}
+                style={{ border }}
+            />
+        );
+    }
+    return (
+        <div
+            className={`rounded-full shrink-0 flex flex-col items-center justify-center px-2 ${dimensionClass}`}
+            style={{ border, backgroundColor: `${theme.accent}10`, color: mutedText }}
+        >
+            <span className="text-[9px] font-bold uppercase tracking-wide text-center leading-tight" style={{ color: theme.accent }}>
+                Photo
+            </span>
+            <span className="text-[8px] mt-1 text-center leading-tight opacity-75">Portrait</span>
+        </div>
+    );
+}
+
 /* ---------- Expertise Badges ---------- */
 function ExpertiseBadges({
                              expertise,
@@ -192,13 +230,23 @@ function ModernLayout({
         >
             {/* Header */}
             <div className="p-8 pb-6" style={{ borderBottom: `2px solid ${theme.accent}40` }}>
-                <h1 className="text-3xl font-bold tracking-tight mb-1" style={{ color: theme.accent }}>
-                    {resume.fullName || "Your Name"}
-                </h1>
-                <p className="text-lg font-medium mb-4" style={{ color: text }}>
-                    {resume.profession || "Professional Title"}
-                </p>
-                <ContactItems resume={resume} theme={theme} mutedText={mutedText} />
+                <div className="flex flex-col sm:flex-row gap-6 sm:items-start">
+                    <ProfileHeadshot
+                        photoUrl={resume.photoUrl}
+                        theme={theme}
+                        mutedText={mutedText}
+                        dimensionClass="w-28 h-28 mx-auto sm:mx-0"
+                    />
+                    <div className="flex-1 min-w-0 text-center sm:text-left">
+                        <h1 className="text-3xl font-bold tracking-tight mb-1" style={{ color: theme.accent }}>
+                            {resume.fullName || "Your Name"}
+                        </h1>
+                        <p className="text-lg font-medium mb-4" style={{ color: text }}>
+                            {resume.profession || "Professional Title"}
+                        </p>
+                        <ContactItems resume={resume} theme={theme} mutedText={mutedText} />
+                    </div>
+                </div>
             </div>
 
             <div className="p-8 space-y-6">
@@ -362,7 +410,15 @@ function TwoColumnLayout({
         >
             {/* Left Sidebar */}
             <div className="w-[32%] p-6 space-y-6" style={{ backgroundColor: `${theme.accent}08` }}>
-                <div className="space-y-1">
+                <div className="flex justify-center">
+                    <ProfileHeadshot
+                        photoUrl={resume.photoUrl}
+                        theme={theme}
+                        mutedText={mutedText}
+                        dimensionClass="w-24 h-24"
+                    />
+                </div>
+                <div className="space-y-1 text-center">
                     <h1 className="text-xl font-bold leading-tight" style={{ color: theme.accent }}>
                         {resume.fullName || "Your Name"}
                     </h1>
@@ -561,6 +617,14 @@ function MinimalLayout({
             style={{ backgroundColor: theme.background, color: text }}
         >
             <div className="p-10 text-center space-y-3" style={{ borderBottom: `1px solid ${theme.accent}20` }}>
+                <div className="flex justify-center mb-2">
+                    <ProfileHeadshot
+                        photoUrl={resume.photoUrl}
+                        theme={theme}
+                        mutedText={mutedText}
+                        dimensionClass="w-28 h-28"
+                    />
+                </div>
                 <h1 className="text-3xl font-light tracking-wide" style={{ color: theme.accent }}>
                     {resume.fullName || "Your Name"}
                 </h1>
@@ -703,9 +767,19 @@ function CompactLayout({
             style={{ backgroundColor: theme.background, color: text }}
         >
             <div className="p-5 pb-3" style={{ borderBottom: `1px solid ${theme.accent}30` }}>
-                <h1 className="text-2xl font-bold mb-0.5" style={{ color: theme.accent }}>{resume.fullName || "Your Name"}</h1>
-                <p className="text-sm mb-2" style={{ color: text }}>{resume.profession || "Professional Title"}</p>
-                <ContactItems resume={resume} theme={theme} mutedText={mutedText} className="text-[11px]" />
+                <div className="flex gap-4 items-start">
+                    <ProfileHeadshot
+                        photoUrl={resume.photoUrl}
+                        theme={theme}
+                        mutedText={mutedText}
+                        dimensionClass="w-16 h-16"
+                    />
+                    <div className="min-w-0 flex-1">
+                        <h1 className="text-2xl font-bold mb-0.5" style={{ color: theme.accent }}>{resume.fullName || "Your Name"}</h1>
+                        <p className="text-sm mb-2" style={{ color: text }}>{resume.profession || "Professional Title"}</p>
+                        <ContactItems resume={resume} theme={theme} mutedText={mutedText} className="text-[11px]" />
+                    </div>
+                </div>
             </div>
 
             <div className="p-5 space-y-4">
@@ -850,13 +924,23 @@ function ExecutiveLayout({
             style={{ backgroundColor: theme.background, color: text }}
         >
             <div className="p-8 pb-5" style={{ backgroundColor: `${theme.accent}10`, borderBottom: `3px solid ${theme.accent}` }}>
-                <h1 className="text-[28px] font-serif font-bold mb-1" style={{ color: text, letterSpacing: "0.02em" }}>
-                    {resume.fullName || "Your Name"}
-                </h1>
-                <p className="text-sm font-medium mb-3 uppercase tracking-widest" style={{ color: theme.accent }}>
-                    {resume.profession || "Professional Title"}
-                </p>
-                <ContactItems resume={resume} theme={theme} mutedText={mutedText} className="text-xs" />
+                <div className="flex flex-col sm:flex-row gap-6 sm:items-start sm:justify-between">
+                    <div className="flex-1 min-w-0">
+                        <h1 className="text-[28px] font-serif font-bold mb-1" style={{ color: text, letterSpacing: "0.02em" }}>
+                            {resume.fullName || "Your Name"}
+                        </h1>
+                        <p className="text-sm font-medium mb-3 uppercase tracking-widest" style={{ color: theme.accent }}>
+                            {resume.profession || "Professional Title"}
+                        </p>
+                        <ContactItems resume={resume} theme={theme} mutedText={mutedText} className="text-xs" />
+                    </div>
+                    <ProfileHeadshot
+                        photoUrl={resume.photoUrl}
+                        theme={theme}
+                        mutedText={mutedText}
+                        dimensionClass="w-[100px] h-[100px] mx-auto sm:mx-0 sm:mt-1"
+                    />
+                </div>
             </div>
 
             <div className="p-8 space-y-5">

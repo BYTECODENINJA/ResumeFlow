@@ -1,4 +1,5 @@
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect, useCallback, useRef } from "react";
+import { useNavigate, useSearchParams } from "react-router-dom";
 import { PanelLeft, PanelRight, Smartphone, Monitor, Save, FolderOpen, Check } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -10,8 +11,11 @@ import { ThemeSelector } from "./ThemeSelector";
 import { LayoutSelector } from "./LayoutSelector";
 import { PDFExportButton } from "./PDFExport";
 import { useAutoSave } from "@/hooks/useAutoSave";
-import { useResumeStore } from "@/store/resumeStore";
+import { mergeResumePayload, useResumeStore } from "@/store/resumeStore";
 import { toast } from "sonner";
+import { useAuth } from "@/contexts/AuthContext";
+import { createCloudResume, getResumeById, updateCloudResume } from "@/lib/supabase";
+import { RESUME_THEMES, DEFAULT_THEME } from "@/lib/themes";
 
 interface SavedSession {
     id: string;
@@ -23,7 +27,13 @@ interface SavedSession {
     savedAt: string;
 }
 
-export function EditorLayout() {
+export function EditorLayout({ isDemo = false }: { isDemo?: boolean }) {
+    const navigate = useNavigate();
+    const [searchParams, setSearchParams] = useSearchParams();
+    const resumeId = searchParams.get("resumeId");
+    const loadedRemoteRef = useRef<string | null>(null);
+    const { user, loading: authLoading } = useAuth();
+
     const [isMobile, setIsMobile] = useState(false);
     const [activeTab, setActiveTab] = useState<"edit" | "preview">("edit");
     const [savedSessions, setSavedSessions] = useState<SavedSession[]>([]);
@@ -37,12 +47,69 @@ export function EditorLayout() {
     const template = useResumeStore((s) => s.template);
     const layout = useResumeStore((s) => s.layout);
     const loadResume = useResumeStore((s) => s.loadResume);
+    const setTheme = useResumeStore((s) => s.setTheme);
     const setTemplate = useResumeStore((s) => s.setTemplate);
     const setLayout = useResumeStore((s) => s.setLayout);
     const setLastSaved = useResumeStore((s) => s.setLastSaved);
     const setDirty = useResumeStore((s) => s.setDirty);
 
-    useAutoSave(1500);
+    useAutoSave(1500, { enabled: !isDemo });
+
+    useEffect(() => {
+        if (!resumeId) loadedRemoteRef.current = null;
+    }, [resumeId]);
+
+    useEffect(() => {
+        if (isDemo) return;
+        if (authLoading) return;
+        if (resumeId && !user) {
+            toast.info("Sign in to load this resume from the cloud");
+            navigate("/auth", { replace: false, state: { from: `/builder?resumeId=${encodeURIComponent(resumeId)}` } });
+            return;
+        }
+        if (!resumeId || !user) return;
+        if (loadedRemoteRef.current === resumeId) return;
+
+        let cancelled = false;
+
+        void (async () => {
+            try {
+                const row = await getResumeById(resumeId);
+                if (cancelled) return;
+                if (!row || row.user_id !== user.id) {
+                    toast.error("That resume could not be loaded.");
+                    setSearchParams(
+                        (prev) => {
+                            const next = new URLSearchParams(prev);
+                            next.delete("resumeId");
+                            return next;
+                        },
+                        { replace: true }
+                    );
+                    return;
+                }
+
+                loadedRemoteRef.current = resumeId;
+                loadResume(mergeResumePayload(row.data as Record<string, unknown>));
+
+                const t = RESUME_THEMES.find((x) => x.id === row.theme_id) ?? DEFAULT_THEME;
+                setTheme(t);
+
+                const layoutVal = row.layout || "modern";
+                setTemplate(row.template || "modern");
+                setLayout(layoutVal as ReturnType<typeof useResumeStore.getState>["layout"]);
+
+                toast.success(`Editing “${row.title}”`);
+            } catch (e) {
+                console.error(e);
+                toast.error("Cloud load failed. Check Supabase configuration.");
+            }
+        })();
+
+        return () => {
+            cancelled = true;
+        };
+    }, [isDemo, resumeId, user, authLoading, loadResume, navigate, setLayout, setSearchParams, setTheme, setTemplate]);
 
     useEffect(() => {
         const check = () => setIsMobile(window.innerWidth < 1024);
@@ -60,8 +127,45 @@ export function EditorLayout() {
         }
     }, []);
 
-    const handleManualSave = useCallback(() => {
+    const handleManualSave = useCallback(async () => {
+        if (isDemo) return;
         try {
+            if (user) {
+                const title = resume.fullName.trim() || "Untitled resume";
+                const dataPayload = { ...resume } as unknown as Record<string, unknown>;
+                try {
+                    if (resumeId) {
+                        await updateCloudResume(resumeId, {
+                            title,
+                            data: dataPayload,
+                            theme_id: theme.id,
+                            template,
+                            layout,
+                        });
+                    } else {
+                        const row = await createCloudResume(user.id, title, dataPayload, theme.id, template, layout);
+                        setSearchParams(
+                            (prev) => {
+                                const next = new URLSearchParams(prev);
+                                next.set("resumeId", row.id);
+                                return next;
+                            },
+                            { replace: true }
+                        );
+                    }
+                    setLastSaved(new Date().toLocaleTimeString());
+                    setDirty(false);
+                    setJustSaved(true);
+                    setTimeout(() => setJustSaved(false), 2000);
+                    toast.success(resumeId ? "Saved to My Resumes" : "Saved to cloud — resume linked!");
+                    return;
+                } catch (e) {
+                    console.error(e);
+                    toast.error("Cloud save failed.");
+                }
+                return;
+            }
+
             const sessions: SavedSession[] = JSON.parse(localStorage.getItem("resumeflow-sessions") || "[]");
             const newSession: SavedSession = {
                 id: crypto.randomUUID(),
@@ -82,7 +186,7 @@ export function EditorLayout() {
         } catch {
             toast.error("Failed to save progress");
         }
-    }, [resume, theme, template, layout, setLastSaved, setDirty]);
+    }, [isDemo, user, resumeId, resume, theme.id, template, layout, setLastSaved, setDirty, setSearchParams]);
 
     const handleLoad = useCallback(
         (session: SavedSession) => {
@@ -108,7 +212,7 @@ export function EditorLayout() {
 
     const SaveButton = (
         <Button
-            onClick={handleManualSave}
+            onClick={() => void handleManualSave()}
             variant="ghost"
             size="sm"
             className={`gap-1.5 h-8 text-xs ${justSaved ? "text-neon-green bg-neon-green/10" : "text-white/70 hover:text-white hover:bg-white/10"}`}
@@ -179,6 +283,13 @@ export function EditorLayout() {
         </Dialog>
     );
 
+    const saveLoadToolbar = !isDemo ? (
+        <>
+            {SaveButton}
+            {LoadDialog}
+        </>
+    ) : null;
+
     if (isMobile) {
         return (
             <div className="h-[calc(100vh-64px)] flex flex-col bg-black">
@@ -196,9 +307,8 @@ export function EditorLayout() {
                         </TabsList>
                     </Tabs>
                     <div className="flex items-center gap-1">
-                        {SaveButton}
-                        {LoadDialog}
-                        <PDFExportButton />
+                        {saveLoadToolbar}
+                        <PDFExportButton disabled={isDemo} />
                     </div>
                 </div>
                 <div className="flex-1 overflow-hidden">
@@ -226,12 +336,17 @@ export function EditorLayout() {
                     <div className="flex items-center gap-2 text-xs text-white/50">
                         <Monitor className="w-3.5 h-3.5" />
                         <span>Editor</span>
-                        {isDirty && <span className="text-neon-green animate-pulse">• Unsaved</span>}
-                        {lastSaved && !isDirty && <span className="text-white/30">Saved {lastSaved}</span>}
+                        {isDemo ? (
+                            <span className="text-amber-400/95 text-[10px] font-medium">Demo — sign in for save/export</span>
+                        ) : (
+                            <>
+                                {isDirty && <span className="text-neon-green animate-pulse">• Unsaved</span>}
+                                {lastSaved && !isDirty && <span className="text-white/30">Saved {lastSaved}</span>}
+                            </>
+                        )}
                     </div>
                     <div className="flex items-center gap-1">
-                        {SaveButton}
-                        {LoadDialog}
+                        {saveLoadToolbar}
                         <ThemeSelector />
                     </div>
                 </div>
@@ -249,7 +364,7 @@ export function EditorLayout() {
                     </div>
                     <div className="flex items-center gap-2">
                         <LayoutSelector />
-                        <PDFExportButton />
+                        <PDFExportButton disabled={isDemo} />
                     </div>
                 </div>
                 <div className="flex-1 overflow-auto p-6">

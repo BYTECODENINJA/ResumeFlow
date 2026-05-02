@@ -4,13 +4,16 @@ import jsPDF from "jspdf";
 import { Download, Loader2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useResumeStore } from "@/store/resumeStore";
+import { ExportPaywallDialog } from "@/components/ExportPaywallDialog";
+import { isExportUnlocked } from "@/lib/payment";
 
-export function PDFExportButton() {
+export function PDFExportButton({ disabled = false }: { disabled?: boolean }) {
     const [isExporting, setIsExporting] = useState(false);
+    const [paywallOpen, setPaywallOpen] = useState(false);
     const resume = useResumeStore((s) => s.resume);
     const theme = useResumeStore((s) => s.theme);
 
-    const handleExport = useCallback(async () => {
+    const doExport = useCallback(async () => {
         const previewEl = document.getElementById("resume-preview-canvas");
         if (!previewEl) return;
 
@@ -39,14 +42,27 @@ export function PDFExportButton() {
         }
     }, [resume.fullName, theme.background]);
 
+    const handleClick = () => {
+        if (disabled) return;
+        if (isExportUnlocked()) {
+            void doExport();
+            return;
+        }
+        setPaywallOpen(true);
+    };
+
     return (
-        <Button
-            onClick={handleExport}
-            disabled={isExporting}
-            className="bg-neon-green text-black hover:bg-neon-green/90 font-semibold gap-2"
-        >
-            {isExporting ? <Loader2 className="w-4 h-4 animate-spin" /> : <Download className="w-4 h-4" />}
-            {isExporting ? "Exporting..." : "Export PDF"}
-        </Button>
+        <>
+            <ExportPaywallDialog open={paywallOpen} onOpenChange={setPaywallOpen} onPaid={() => void doExport()} />
+            <Button
+                onClick={handleClick}
+                disabled={disabled || isExporting}
+                title={disabled ? "Sign in and use the full builder to export PDFs." : undefined}
+                className="bg-neon-green text-black hover:bg-neon-green/90 font-semibold gap-2 disabled:opacity-40 disabled:pointer-events-none"
+            >
+                {isExporting ? <Loader2 className="w-4 h-4 animate-spin" /> : <Download className="w-4 h-4" />}
+                {isExporting ? "Exporting..." : "Export PDF"}
+            </Button>
+        </>
     );
 }

@@ -15,6 +15,14 @@
 </head>
 
 <body>
+<script>
+  (function () {
+    try {
+      var path = window.location.pathname || '';
+      if (path === '/demo' || path.indexOf('/demo/') === 0) sessionStorage.setItem('resumeflow-demo-flag', '1');
+    } catch (_) { /* noop */ }
+  })();
+</script>
 <div id="root"></div>
 <script type="module" src="/src/main.tsx"></script>
 </body>
